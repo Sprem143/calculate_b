@@ -1,33 +1,105 @@
 const xlsx = require('xlsx');
-const Product = require('./model')
+const Product = require('./model/product');
+const FinalSheet= require('./model/finalsheet')
 const path = require('path');
-const fs = require('fs')
+const fs = require('fs');
+const finalsheet = require('./model/finalsheet');
+
+
 exports.uploaddata = async (req, res) => {
-  console.log("api called")
-  const file = req.file;
-  if (!file) {
-    return res.status(400).send('No file uploaded.');
+  try {
+    // Delete all existing data in the collection
+    await Product.deleteMany({});
+    const file = req.file;
+    if (!file) {
+      return res.status(400).send('No file uploaded.');
+    }
+
+    // Read the uploaded Excel file
+    const workbook = xlsx.readFile(file.path);
+    const sheetName = workbook.SheetNames[0];  // Read the first sheet
+    const sheet = workbook.Sheets[sheetName];
+
+    // Convert the sheet to JSON and insert it into MongoDB
+    const data = xlsx.utils.sheet_to_json(sheet);
+    await Product.insertMany(data);
+    console.log(data.length)
+    res.status(200).json({ msg: "File uploaded successfully",number:data.length });
+  } catch (err) {
+    console.error('Error processing file upload:', err);
+    res.status(500).json({ msg: 'Error processing file upload' });
   }
-  const workbook = xlsx.readFile(file.path);
-  const sheetName = workbook.SheetNames[0];  // Read first sheet
-  const sheet = workbook.Sheets[sheetName];
-
-  // Convert the sheet to JSON
-  const data = xlsx.utils.sheet_to_json(sheet);
-  console.log(data)
-  Product.insertMany(data)
-    .then(async () => {
-      res.status(200).json({ msg: "File uploaded Successfully" })
-    })
-    .catch(err => {
-      console.error('Error saving data to MongoDB:', err);
-      res.status(500).json({ msg: 'Error saving data to Database' });
-    });
-
 };
 // -------------------------------------------------------------
 
 exports.downloadExcel = async (req, res) => {
+  try {
+    const data = await finalsheet.find();
+    if (!data || data.length === 0) {
+      return res.status(404).send('No data found.');
+    }
+
+    const jsondata = data.map((item) => (
+      {
+        // UPC:item.UPC
+        SKU: item.SKU,
+        "Original Product Cost": item['Original Product Cost'],
+        "Current Products Cost": item['Current Products Cost'],
+        "Vendor Shipping": item['Vendor Shipping'],
+        Fulfillment: item.Fulfillment,
+        "Amazon Fees%": item['Amazon Fees%'],
+        "Shipping Template used": item['Shipping Template used'],
+        'Min Profit $- Calculations': item['Min Profit $- Calculations'],
+        'Current Inventory': item['Current Inventory'],
+        'Total Cost':item['Total Cost'],
+        'Maximum Price':item['Maximum Price'],
+        'Minimum Price':item['Minimum Price'],
+        'Amazon Fee':item['Amazon Fee'],
+        'Net Profit':item['Net Profit'],
+        Min:item.Min,
+        Max:item.Max,
+        'Selling Price':item['Selling Price'],
+        'Max Price - Selling Price':item['Max Price - Selling Price'],
+        'Price difference with new-old':item['Price difference with new-old']
+      }
+    ))
+
+    const worksheet = xlsx.utils.json_to_sheet(jsondata);
+    const workbook = xlsx.utils.book_new();
+
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Products");
+    const filePath = path.join(__dirname, 'data.xlsx');
+    xlsx.writeFile(workbook, filePath);
+
+    // Send the Excel file for download
+    res.download(filePath, (err) => {
+      if (err) {
+        console.error('Error sending file:', err);
+      }
+      // Delete the file after download
+      fs.unlinkSync(filePath);
+      
+    });
+  } catch (err) {
+    console.log(err)
+  }
+}
+
+exports.getsheet=async(req,res)=>{
+  try{
+    let data= await finalsheet.find({});
+    const dPrice= data.filter((d)=> d['Price difference with new-old']<0);
+    const iPrice = data.filter((d)=> d['Price difference with new-old']>0);
+    const nPrice= data.filter((d)=> d['Price difference with new-old']==0);
+    res.status(200).json({products:data, dPrice:dPrice,iPrice:iPrice,nPrice:nPrice,number:data.length})
+
+  }catch(err){
+    console.log(err);
+    res.status(500).json({msg:"Error while fetching sheet"})
+  }
+}
+
+exports.calculate=async(req,res)=>{
   try {
     const data = await Product.find();
     if (!data || data.length === 0) {
@@ -59,22 +131,13 @@ exports.downloadExcel = async (req, res) => {
         'Price difference with new-old':(item['Current Products Cost']-item['Original Product Cost']).toFixed(2)
       }
     ))
-    const worksheet = xlsx.utils.json_to_sheet(jsondata);
-    const workbook = xlsx.utils.book_new();
-
-    xlsx.utils.book_append_sheet(workbook, worksheet, "Products");
-    const filePath = path.join(__dirname, 'data.xlsx');
-    xlsx.writeFile(workbook, filePath);
-
-    // Send the Excel file for download
-    res.download(filePath, (err) => {
-      if (err) {
-        console.error('Error sending file:', err);
-      }
-      // Delete the file after download
-      fs.unlinkSync(filePath);
-    });
+    await FinalSheet.deleteMany({});
+   const result= await finalsheet.insertMany(jsondata);
+   const dPrice= result.filter((d)=> d['Price difference with new-old']<0);
+   const iPrice =result.filter((d)=> d['Price difference with new-old']>0);
+   const nPrice= result.filter((d)=> d['Price difference with new-old']==0);
+   res.status(200).json({products:result, dPrice:dPrice,iPrice:iPrice,nPrice:nPrice,number:result.length})
   } catch (err) {
-    console.log(err)
+    console.log(err);
   }
 }

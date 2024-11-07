@@ -6,7 +6,7 @@ db();
 
 
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 10000;
 
 app.use(cors());
 app.use(express.json());

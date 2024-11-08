@@ -101,6 +101,7 @@ exports.getsheet=async(req,res)=>{
 
 exports.calculate=async(req,res)=>{
   try {
+    const per= req.body.percentage;
     const data = await Product.find();
     if (!data || data.length === 0) {
       return res.status(404).send('No data found.');
@@ -119,7 +120,7 @@ exports.calculate=async(req,res)=>{
         'Min Profit $- Calculations': item['Min Profit $- Calculations'],
         'Current Inventory': item['Current Inventory'],
         'Total Cost': (item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment).toFixed(2),
-        'Maximum Price': ((item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment) * 1.75).toFixed(2),
+        'Maximum Price': ((item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment) * (1+ (per/100))).toFixed(2),
         'Minimum Price':((100*(item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment + item['Min Profit $- Calculations']))/(100-(100*item['Amazon Fees%']))).toFixed(2),
         'Amazon Fee':((100*(item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment + item['Min Profit $- Calculations']))/(100-(100*item['Amazon Fees%']))*item['Amazon Fees%']).toFixed(2),
         'Net Profit':item['Min Profit $- Calculations'].toFixed(2),

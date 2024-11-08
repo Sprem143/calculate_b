@@ -8,6 +8,6 @@ const upload = multer({ dest: 'uploads/' });
 router.post('/upload',upload.single('file'), uploaddata)
 router.get('/download-excel', downloadExcel)
 router.get('/getsheet',getsheet)
-router.get('/calculate',calculate)
+router.post('/calculate',calculate)
 
 module.exports = router;

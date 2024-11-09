@@ -126,10 +126,10 @@ exports.calculate=async(req,res)=>{
         'Amazon Fee':((100*(item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment + item['Min Profit $- Calculations']))/(100-(100*item['Amazon Fees%']))*item['Amazon Fees%']).toFixed(2),
         'Net Profit':item['Min Profit $- Calculations'].toFixed(2),
         Min:((100*(item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment + item['Min Profit $- Calculations']))/(100-(100*item['Amazon Fees%']))-item['Shipping Template used']).toFixed(2),
-        Max:(((item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment) * 1.75)-item['Shipping Template used']).toFixed(2),
+        Max:(((item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment) * (1+ (per/100)))-item['Shipping Template used']).toFixed(2),
         'Selling Price':((item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment)*(1+(sp/100))).toFixed(2),
-        'Selling - Min Price for Checking':(((item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment)*1.3) - ((100*(item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment + item['Min Profit $- Calculations']))/(100-(100*item['Amazon Fees%']))-item['Shipping Template used'])).toFixed(2),
-        'Max Price - Selling Price':((((item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment) * 1.75)-item['Shipping Template used'])- ((item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment)*1.3)).toFixed(2),
+        'Selling - Min Price for Checking':(((item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment)*(1+(sp/100))) - ((100*(item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment + item['Min Profit $- Calculations']))/(100-(100*item['Amazon Fees%']))-item['Shipping Template used'])).toFixed(2),
+        'Max Price - Selling Price':((((item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment) *(1+ (per/100)))-item['Shipping Template used'])- ((item['Current Products Cost'] + item['Vendor Shipping'] + item.Fulfillment)*(1+(sp/100)))).toFixed(2),
         'Price difference with new-old':(item['Current Products Cost']-item['Original Product Cost']).toFixed(2)
       }
     ))

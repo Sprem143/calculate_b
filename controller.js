@@ -59,6 +59,7 @@ exports.downloadExcel = async (req, res) => {
         Min:item.Min,
         Max:item.Max,
         'Selling Price':item['Selling Price'],
+        'Selling - Min Price for Checking':item['Selling - Min Price for Checking'],
         'Max Price - Selling Price':item['Max Price - Selling Price'],
         'Price difference with new-old':item['Price difference with new-old']
       }
